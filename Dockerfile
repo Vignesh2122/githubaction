@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Compile the Java source file
-RUN javac com/example/Calculator.java
+RUN javac Calculator.java
 
 # Run the Calculator class
-CMD ["java", "com.example.Calculator"]
+CMD ["java", "Calculator"]
