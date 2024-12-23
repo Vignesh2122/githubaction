@@ -1,0 +1,42 @@
+name: deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Java 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Docker setup
+      uses: docker/setup-buildx-action@v1
+
+    - name: Build using Maven
+      run: |
+        mvn clean install -DskipTests=true
+
+    - name: Get next version
+      uses: reecetech/version-increment@2024.10.1
+      id: version
+      with:
+        scheme: semver
+        increment: patch
+
+    - name: Docker build
+      uses: docker/build-push-action@v2
+      with:
+        push: false
+        tags: appname:${{ steps.version.outputs.version }}
+        context: .
