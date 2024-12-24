@@ -43,7 +43,7 @@ jobs:
       run: sudo docker save -o appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
 
     - name: Deploy Docker Image to EC2
-      run: scp -i ${{ secrets.SSH_KEY_PATH }} appname_${{ steps.version.outputs.version }}.tar ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USERNAME }}/
+      run: scp -r ${{ secrets.SSH_KEY_PATH }} appname_${{ steps.version.outputs.version }}.tar ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USERNAME }}/
 
     - name: Load Docker Image on EC2
       uses: appleboy/ssh-action@v1.2.0
