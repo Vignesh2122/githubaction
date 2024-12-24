@@ -39,30 +39,20 @@ jobs:
     - name: Build Docker Image
       run: sudo docker build -t appname:${{ steps.version.outputs.version }} .
 
-    - name: Save Docker Image to File
-      run: sudo docker save -o appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
-
-    - name: Deploy Docker Image to EC2
-      uses: appleboy/scp-action@v0.1.8
+    - name: Deploy Code to EC2
+      uses: appleboy/scp-action@v0.1.7
       with:
-        source: appname_${{ steps.version.outputs.version }}.tar
-        target: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USERNAME }}/
-
-    - name: Load Docker Image on EC2
-      uses: appleboy/ssh-action@v0.1.8
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          sudo docker load -i /home/${{ secrets.SSH_USERNAME }}/appname_${{ steps.version.outputs.version }}.tar
+        source: ./
+        target: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USERNAME }}/githubaction/
 
     - name: Update Docker Compose Version and Restart
-      uses: appleboy/ssh-action@v0.1.8
+      uses: appleboy/ssh-action@v1.2.0
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          sudo sed -i 's/appname:[0-9.]*/appname:${{ steps.version.outputs.version }}/' /home/ubuntu/githubaction/docker-compose.yml
-          cd /home/ubuntu/githubaction && sudo docker-compose up -d
+          cd /home/${{ secrets.SSH_USERNAME }}/githubaction
+          sudo docker build -t appname:${{ steps.version.outputs.version }} .
+          sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
+          sudo docker-compose -f /home/ubuntu/githubaction/docker-compose.yml up -d
