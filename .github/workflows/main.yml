@@ -47,17 +47,17 @@ jobs:
       env:
         USERNAME: ${{ secrets.SSH_USERNAME }}
         HOST: ${{ secrets.SSH_HOST }}
-        KEY: ${{ secrets.SSH_KEY }}
+        KEY: ${{ secrets.SSH_DEPLOYMENT_KEY }}
       with:
         source: appname_${{ steps.version.outputs.version }}.tar
-        target:  /home/ubuntu/githubaction
+        target: /home/${{ secrets.SSH_USERNAME }}/githubaction
 
     - name: Load Docker Image on EC2
       uses: appleboy/ssh-action@v1.2.0
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
+        key: ${{ secrets.SSH_DEPLOYMENT_KEY }}
         script: |
           sudo docker load -i /home/${{ secrets.SSH_USERNAME }}/appname_${{ steps.version.outputs.version }}.tar
 
@@ -66,7 +66,7 @@ jobs:
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
+        key: ${{ secrets.SSH_DEPLOYMENT_KEY }}
         script: |
           sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
           cd /home/ubuntu/githubaction && sudo docker-compose up -d
