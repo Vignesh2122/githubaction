@@ -1,4 +1,5 @@
-name: Build, Push, and Deploy
+
+name: Build
 
 on:
   push:
@@ -36,11 +37,6 @@ jobs:
     - name: Show new version
       run: echo "New version is ${{ steps.version.outputs.version }}"
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build and Push Docker Image
       uses: docker/build-push-action@v2
@@ -48,3 +44,10 @@ jobs:
         push: true
         tags: appname:${{ steps.version.outputs.version }}
         context: .
+
+    - name: Load and Run Docker Image on EC2 
+      uses: appleboy/ssh-action@v0.1.8 
+      with: 
+        host: ${{ secrets.SSH_HOST }} 
+        username: ${{ secrets.SSH_USERNAME }} 
+        key: ${{ secrets.SSH_KEY }} 
