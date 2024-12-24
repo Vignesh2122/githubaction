@@ -48,8 +48,8 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: /tmp/appname_${{ steps.version.outputs.version }}.tar
-        target: /tmp/
+        source: './*'
+        target: /tmp/appname_${{ steps.version.outputs.version }}.tar
 
     - name: Load Docker Image on EC2
       uses: appleboy/ssh-action@v1.2.0
