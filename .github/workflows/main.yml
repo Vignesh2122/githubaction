@@ -40,28 +40,29 @@ jobs:
       run: sudo docker build -t appname:${{ steps.version.outputs.version }} .
 
     - name: Save Docker Image to File
-      run: sudo docker save -o /home/ubuntu/githubaction/appname:${{ steps.version.outputs.version }}.tar 
-    - name: Deploy Docker Image to EC2
+      run: sudo docker save -o /tmp/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
+
+    - name: Deploy Files to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: './*'
+        source: /tmp/appname_${{ steps.version.outputs.version }}.tar
         target: /home/ubuntu/githubaction/
 
-    - name: Load Docker Image on EC2 
-      uses: JimCronqvist/action-ssh@master 
-      with: 
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
+    - name: Load Docker Image on EC2
+      uses: JimCronqvist/action-ssh@master
+      with:
+        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
         privateKey: ${{ secrets.SSH_KEY }}
         script: |
-          sudo docker load -i /home/ubuntu/githubaction/${{ steps.version.outputs.version }}.tar
+          sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
 
-    - name: Update Docker Compose Version and Restart 
-      uses: JimCronqvist/action-ssh@master 
+    - name: Update Docker Compose Version and Restart
+      uses: JimCronqvist/action-ssh@master
       with:
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
+        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
         privateKey: ${{ secrets.SSH_KEY }}
         script: |
           sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
