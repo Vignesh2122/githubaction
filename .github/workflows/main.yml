@@ -65,7 +65,7 @@ jobs:
         hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
         privateKey: ${{ secrets.SSH_KEY }}
         script: |
-          sudo docker load -i /tmp/appname_${{ steps.version.outputs.version }}.tar
+          sudo docker load -i /home/ubuntu/githubaction/${{ steps.version.outputs.version }}.tar
 
     - name: Update Docker Compose Version and Restart 
       uses: JimCronqvist/action-ssh@master 
