@@ -40,7 +40,7 @@ jobs:
       run: sudo docker build -t appname:${{ steps.version.outputs.version }} .
 
     - name: Save Docker Image to File
-      run: sudo docker save -o appname:${{ steps.version.outputs.version }}.tar 
+      run: sudo docker save -o /home/ubuntu/githubaction/appname:${{ steps.version.outputs.version }}.tar 
     - name: Deploy Docker Image to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
