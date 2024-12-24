@@ -48,24 +48,22 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: /tmp/appname_${{ steps.version.outputs.version }}.tar
+        source: './*'
         target: /tmp/
 
-    - name: Load Docker Image on EC2
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
+    - name: Load Docker Image on EC2 
+      uses: JimCronqvist/action-ssh@master 
+      with: 
+        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
+        privateKey: ${{ secrets.SSH_KEY }}
         script: |
           sudo docker load -i /tmp/appname_${{ steps.version.outputs.version }}.tar
 
-    - name: Update Docker Compose Version and Restart
-      uses: appleboy/ssh-action@v1.2.0
+    - name: Update Docker Compose Version and Restart 
+      uses: JimCronqvist/action-ssh@master 
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
+        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
+        privateKey: ${{ secrets.SSH_KEY }}
         script: |
           sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
           cd /home/ubuntu/githubaction && sudo docker-compose up -d
