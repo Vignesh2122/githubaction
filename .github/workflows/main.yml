@@ -51,6 +51,14 @@ jobs:
         source: './*'
         target: /tmp/
 
+    - name: Move All Files to Target Directory 
+      uses: JimCronqvist/action-ssh@master 
+      with: 
+        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
+        privateKey: ${{ secrets.SSH_KEY }} 
+        script: | 
+          sudo mv /tmp/* /home/ubuntu/githubaction/
+
     - name: Load Docker Image on EC2 
       uses: JimCronqvist/action-ssh@master 
       with: 
