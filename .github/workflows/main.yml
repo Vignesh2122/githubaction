@@ -53,3 +53,6 @@ jobs:
           VERSION=${{ steps.version.outputs.version }}
           sed -i "s/appname:[0-9.]*/appname:$VERSION/" /home/ubuntu/githubaction/docker-compose.yml
           docker-compose -f /home/ubuntu/githubaction/docker-compose.yml up -d
+        port: 22
+        timeout: 60s
+        debug: true
