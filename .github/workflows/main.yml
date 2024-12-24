@@ -48,8 +48,8 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: './*'
-        target: /tmp/appname_${{ steps.version.outputs.version }}.tar
+        source: /tmp/appname_${{ steps.version.outputs.version }}.tar
+        target: /tmp/
 
     - name: Load Docker Image on EC2
       uses: appleboy/ssh-action@v1.2.0
@@ -58,8 +58,7 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          sudo mv /tmp/appname_${{ steps.version.outputs.version }}.tar /home/ubuntu/githubaction/
-          sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
+          sudo docker load -i /tmp/appname_${{ steps.version.outputs.version }}.tar
 
     - name: Update Docker Compose Version and Restart
       uses: appleboy/ssh-action@v1.2.0
