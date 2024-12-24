@@ -1,4 +1,3 @@
-
 name: Build
 
 on:
@@ -43,14 +42,14 @@ jobs:
         push: false
         tags: appname:${{ steps.version.outputs.version }}
         context: .
+
     - name: ssh login 
       uses: appleboy/ssh-action@v0.1.8 
       with: 
         host: ${{ secrets.SSH_HOST }} 
         username: ${{ secrets.SSH_USERNAME }} 
         key: ${{ secrets.SSH_KEY }}
-      run :
-         sed -i 's/appname:[0-9.]*/appname:${{ steps.version.outputs.version }}/' /home/ubuntu/githubaction/docker-compose.yml
-         docker-compose -f /home/ubuntu/githubaction/docker-compose.yml up -d
-
-  
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        sed -i "s/appname:[0-9.]*/appname:$VERSION/" /home/ubuntu/githubaction/docker-compose.yml
+        docker-compose -f /home/ubuntu/githubaction/docker-compose.yml up -d
