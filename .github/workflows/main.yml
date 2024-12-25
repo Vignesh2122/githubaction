@@ -24,7 +24,7 @@ jobs:
       uses: docker/setup-buildx-action@v1
 
     - name: Build using Maven
-      run: mvn clean install -DskipTests=true
+      run: mvn clean install -DskipTests=true -DoutputDirectory=/tmp
 
     - name: Get next version
       id: version
@@ -38,16 +38,19 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        sudo docker build -t appname:${{ steps.version.outputs.version }} .
+        sudo docker build -t appname:${{ steps.version.outputs.version }} -f /tmp/Dockerfile /tmp
 
     - name: Save Docker Image to File
       run: |
-        sudo docker save -o appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
+        sudo docker save -o /tmp/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
 
     - name: Tar all necessary files
       run: |
-        tar -czf deploy.tar.gz ./target/* docker-compose.yml appname_${{ steps.version.outputs.version }}.tar
-        ls -l deploy.tar.gz  # Verifying the tar file
+        # List the files in /tmp directory to ensure docker-compose.yml is present
+        ls -l /tmp
+        # Create the tarball with the necessary files in /tmp
+        tar -czf /tmp/deploy.tar.gz -C /tmp target docker-compose.yml appname_${{ steps.version.outputs.version }}.tar
+        ls -l /tmp/deploy.tar.gz  # Verifying the tar file
 
     - name: Deploy Docker Image and Files to EC2
       uses: appleboy/scp-action@v0.1.7
@@ -55,9 +58,8 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.KEY }}
-        port: 22
-        source: "deploy.tar.gz"
-        target: "/tmp/"
+        source: "/tmp/deploy.tar.gz"
+        target: /tmp/
 
     - name: SSH into EC2 and deploy
       run: |
