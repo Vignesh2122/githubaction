@@ -46,6 +46,7 @@ jobs:
       run: |
         mkdir -p /home/runner/githubaction
         mv target /home/runner/githubaction/
+        ls -l /home/runner/githubaction/
     
     - name: Save Docker Image to File
       run: sudo docker save -o /home/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
@@ -56,8 +57,8 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: '/home/runner/githubaction/*'
-        target: /tmp/
+        source: '/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar , runner/githubaction/target/*'
+        target: /tmp
 
     - name: Load Docker image
       uses: appleboy/ssh-action@v1.2.0
