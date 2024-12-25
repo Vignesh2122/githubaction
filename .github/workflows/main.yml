@@ -49,7 +49,7 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         source: './target/*, /tmp/appname_${{ steps.version.outputs.version }}.tar'
-        target: /home/ubuntu/githubaction/
+        target: /tmp
 
     - name: Ensure target directory exists
       uses: JimCronqvist/action-ssh@master
