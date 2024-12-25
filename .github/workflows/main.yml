@@ -51,11 +51,12 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         source: "./*"
-        target: "/home/ubuntu/githubaction"
+        target: "/tmp"
 
     - name: Load and Deploy Docker Image on EC2
       run: |
         ssh -i ${{ secrets.SSH_KEY }} ubuntu@${{ secrets.SSH_HOST }} <<EOF
+        sudo mv /tmp/* /home/ubuntu/githubaction
         sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
         sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
         cd /home/ubuntu/githubaction && sudo docker-compose up -d
