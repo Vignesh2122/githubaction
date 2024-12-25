@@ -1,4 +1,3 @@
-
 name: Build and Deploy
 
 on:
@@ -43,9 +42,7 @@ jobs:
     - name: Save Docker Image to File
       run: |
         sudo docker save -o ./appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
-        sudo chmod -R 777 .  
-
-
+        sudo chmod -R 777 .
 
     - name: Deploy Docker Image to EC2
       uses: appleboy/scp-action@v0.1.7
@@ -53,29 +50,43 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        port : 22
-        source: './* '
+        port: 22
+        source: './*'
         target: /tmp/
 
-    - name: Move All Files to Target Directory 
-      uses: JimCronqvist/action-ssh@master 
-      with: 
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
-        privateKey: ${{ secrets.SSH_KEY }} 
-        script: | 
-          sudo mv /tmp/* /home/ubuntu/githubaction/
-    - name: Load Docker Image on EC2 
-      uses: JimCronqvist/action-ssh@master 
-      with: 
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
-        privateKey: ${{ secrets.SSH_KEY }}
+    - name: Load Docker image
+      uses: appleboy/ssh-action@v1.2.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          sudo mv /tmp/appname_${{ steps.version.outputs.version }}.tar /home/ubuntu/githubaction/
+          sudo mv /tmp/target /home/ubuntu/githubaction/  # Move the target directory, adjust as needed
+
+    - name: Update docker-compose.yml
+      uses: appleboy/ssh-action@v1.2.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
-    - name: Update Docker Compose Version and Restart 
-      uses: JimCronqvist/action-ssh@master 
+
+    - name: Restart Docker containers using docker-compose
+      uses: appleboy/ssh-action@v1.2.0
       with:
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
-        privateKey: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
-          cd /home/ubuntu/githubaction && sudo docker-compose up -d
+
+    - name: Restart Docker containers using docker-compose
+      uses: appleboy/ssh-action@v1.2.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          sudo cd /home/ubuntu/githubaction && sudo docker-compose up -d
