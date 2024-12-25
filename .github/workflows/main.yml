@@ -51,7 +51,7 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         source: './*'
-        target: '/tmp'
+        target: /tmp/
 
     - name: Load and Deploy Docker Image on EC2
       run: |
