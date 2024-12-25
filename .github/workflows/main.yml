@@ -42,10 +42,13 @@ jobs:
       run: sudo docker images
 
     - name: Save Docker Image to File
-      run: sudo docker save -o /tmp/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
+      run: sudo docker save -o /home/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
 
-    - name: Verify Tar File Creation
-      run: ls -la /tmp/appname_${{ steps.version.outputs.version }}.tar
+    - name: Create a directory and move files to /tmp
+      run: |
+        mkdir -p /home/runner/githubaction
+        mv target /home/runner/githubaction/
+        
 
     - name: Deploy Docker Image and Target Directory to EC2
       uses: appleboy/scp-action@v0.1.7
@@ -53,20 +56,9 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: './target/*,/tmp/appname_${{ steps.version.outputs.version }}.tar '
-        target: /tmp/
+        source: '/home/runner/githubaction'
+        target: /tmp
 
-    - name: Ensure target directory exists and move files
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          sudo mkdir -p /home/ubuntu/githubaction
-          sudo mv /tmp/appname_${{ steps.version.outputs.version }}.tar /home/ubuntu/githubaction/
-          sudo mv /tmp/target/* /home/ubuntu/githubaction/
-      
     - name: Load Docker image
       uses: appleboy/ssh-action@v1.2.0
       with:
@@ -75,7 +67,7 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         script: |
           sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
-      
+
     - name: Update docker-compose.yml
       uses: appleboy/ssh-action@v1.2.0
       with:
@@ -84,7 +76,7 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         script: |
           sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
-      
+
     - name: Restart Docker containers using docker-compose
       uses: appleboy/ssh-action@v1.2.0
       with:
