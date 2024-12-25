@@ -40,7 +40,7 @@ jobs:
       run: sudo docker build -t appname:${{ steps.version.outputs.version }} .
 
     - name: Save Docker Image to File
-      run: sudo docker save -o appname-${{ steps.version.outputs.version }}.tar
+      run: sudo docker save -o appname-${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
 
     - name: Package All Files
       run: tar -czvf runner_files.tar.gz .
