@@ -41,18 +41,17 @@ jobs:
     - name: Verify Docker Image Existence
       run: sudo docker images
 
-   
+    - name: Save Docker Image to File
+      run: sudo docker save -o /home/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
+
     - name: Create a directory and move files to /tmp
       run: |
         mkdir -p /home/runner/githubaction
         mv target /home/runner/githubaction/
-        ls -l /home/runner/githubaction/
+        mv /home/runner/githubaction/* /tmp/
     
-    - name: Save Docker Image to File
-      run: sudo docker save -o /home/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
-
-    - name : list
-      run : ls -l /home/runner/githubaction/
+    - name: List files in /tmp for debugging
+      run: ls -l /tmp/
 
     - name: Deploy Docker Image and Target Directory to EC2
       uses: appleboy/scp-action@v0.1.7
@@ -60,8 +59,8 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: '/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar , runner/githubaction/target/*'
-        target: /tmp
+        source: '/tmp/appname_${{ steps.version.outputs.version }}.tar, /tmp/target/*'
+        target: /tmp/
 
     - name: Load Docker image
       uses: appleboy/ssh-action@v1.2.0
