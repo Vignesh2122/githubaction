@@ -53,7 +53,7 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: '/tmp/appname_${{ steps.version.outputs.version }}.tar'
+        source: './target/*,/tmp/appname_${{ steps.version.outputs.version }}.tar '
         target: /tmp/
 
     - name: Ensure target directory exists and move files
