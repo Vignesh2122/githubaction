@@ -52,21 +52,22 @@ jobs:
         target: /tmp/
 
     - name: Load Docker Image on EC2 
-      uses: JimCronqvist/action-ssh@master 
-      with: 
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
+      uses: JimCronqvist/action-ssh@master
+      with:
+        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
         privateKey: ${{ secrets.SSH_KEY }}
-    
-    - name : Move tmp and home
-      run : |
-        sudo mv /tmp/* /home/ubuntu/githubaction
-    
-    - name : load docker image
-      run : |
-         sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
-    
-    - name :  Update docker-compose.yml and restart containers
-      run : |
-        sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
-        cd /home/ubuntu/githubaction && sudo docker-compose up -d
-
+        script: |
+          # Ensure the target directory exists on the EC2 instance
+          sudo mkdir -p /home/ubuntu/githubaction
+          
+          # Move the Docker image from /tmp to the target directory
+          sudo mv /tmp/appname_${{ steps.version.outputs.version }}.tar /home/ubuntu/githubaction/
+          
+          # Load the Docker image
+          sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
+          
+          # Update the docker-compose.yml file
+          sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
+          
+          # Restart the containers using docker-compose
+          cd /home/ubuntu/githubaction && sudo docker-compose up -d
