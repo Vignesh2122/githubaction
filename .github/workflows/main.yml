@@ -42,28 +42,57 @@ jobs:
 
     - name: Save Docker Image to File
       run: |
-        sudo docker save -o appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
+        sudo docker save -o /tmp/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
+        sudo chmod 777 /tmp/appname_${{ steps.version.outputs.version }}.tar  # Ensure the .tar file is readable
 
-    - name: Deploy Docker Image to EC2
+    - name: Create directory for target files
+      run: |
+        mkdir -p /home/runner/githubaction
+        mv target /home/runner/githubaction/
+        ls -l /home/runner/githubaction/
+
+    - name: Set permissions for the Docker image file
+      run: |
+        sudo chmod -R 777 /home/runner/githubaction/
+
+    - name: Tar all files into .tar.gz
+      run: |
+        sudo tar czf /tmp/appname_${{ steps.version.outputs.version }}.tar.gz -C /home/runner/githubaction .
+        sudo chmod 777 /tmp/appname_${{ steps.version.outputs.version }}.tar.gz  # Set read/write permissions
+
+    - name: Deploy Docker Image and Artifacts to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: './*'
+        source: '/tmp/appname_${{ steps.version.outputs.version }}.tar,/tmp/appname_${{ steps.version.outputs.version }}.tar.gz'
         target: /tmp/
-        permission: 777
 
-    - name: Add SSH Key
-      uses: webfactory/ssh-agent@v0.5.0
+    - name: Load Docker Image on EC2
+      uses: appleboy/ssh-action@v1.2.0
       with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          sudo mv /tmp/appname_${{ steps.version.outputs.version }}.tar /home/ubuntu/githubaction/
+          sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
 
-    - name: Load and Deploy Docker Image on EC2
-      run: |
-        ssh -i ${{ secrets.SSH_KEY }} ubuntu@${{ secrets.SSH_HOST }} <<EOF
-        sudo mv /tmp/* /home/ubuntu/githubaction
-        sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
-        sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
-        cd /home/ubuntu/githubaction && sudo docker-compose up -d
-        EOF
+    - name: Update docker-compose.yml on EC2
+      uses: appleboy/ssh-action@v1.2.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
+
+    - name: Restart Docker containers using docker-compose
+      uses: appleboy/ssh-action@v1.2.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd /home/ubuntu/githubaction && sudo docker-compose up -d
