@@ -2,11 +2,12 @@ name: Build and Deploy
 
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -36,54 +37,27 @@ jobs:
       run: echo "New version is ${{ steps.version.outputs.version }}"
 
     - name: Build Docker Image
-      run: sudo docker build -t appname:${{ steps.version.outputs.version }} .
-
-    - name: Verify Docker Image Existence
-      run: sudo docker images
-
-    - name: Create a directory and move files to /tmp
       run: |
-        mkdir -p /home/runner/githubaction
-        mv target /home/runner/githubaction/
-        mv /home/runner/githubaction/* /tmp/
+        sudo docker build -t appname:${{ steps.version.outputs.version }} .
+
     - name: Save Docker Image to File
-      run: sudo docker save -o /home/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
-    
-    - name: List files in /tmp for debugging
-      run: ls -l /tmp/
+      run: |
+        sudo docker save -o appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
 
-    - name: Deploy Docker Image and Target Directory to EC2
-      uses: appleboy/scp-action@v0.1.7
+    - name: Add SSH Key
+      uses: webfactory/ssh-agent@v0.8.1
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        source: '/tmp/appname_${{ steps.version.outputs.version }}.tar, /tmp/target/*'
-        target: /tmp/
+        ssh-private-key: ${{ secrets.SSH_KEY }}
 
-    - name: Load Docker image
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
+    - name: Upload Docker Image to EC2 using SCP
+      run: |
+        scp -i ${{ secrets.SSH_KEY }} appname_${{ steps.version.outputs.version }}.tar ubuntu@${{ secrets.SSH_HOST }}:/tmp/
 
-    - name: Update docker-compose.yml
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
-
-    - name: Restart Docker containers using docker-compose
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          cd /home/ubuntu/githubaction && sudo docker-compose up -d
+    - name: Load and Deploy Docker Image on EC2
+      run: |
+        ssh -i ${{ secrets.SSH_KEY }} ubuntu@${{ secrets.SSH_HOST }} <<EOF
+        sudo mv /tmp/* /home/ubuntu/githubaction
+        sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
+        sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
+        cd /home/ubuntu/githubaction && sudo docker-compose up -d
+        EOF
