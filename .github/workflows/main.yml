@@ -1,3 +1,4 @@
+
 name: Build and Deploy
 
 on:
@@ -24,7 +25,7 @@ jobs:
       uses: docker/setup-buildx-action@v1
 
     - name: Build using Maven
-      run: mvn clean install -DskipTests=true -DoutputDirectory=/tmp
+      run: mvn clean install -DskipTests=true
 
     - name: Get next version
       id: version
@@ -37,46 +38,39 @@ jobs:
       run: echo "New version is ${{ steps.version.outputs.version }}"
 
     - name: Build Docker Image
-      run: |
-        sudo docker build -t appname:${{ steps.version.outputs.version }} .
+      run: sudo docker build -t appname:${{ steps.version.outputs.version }} .
 
     - name: Save Docker Image to File
-      run: |
-        sudo docker save -o /tmp/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
+      run: sudo docker save -o /tmp/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
 
-    - name: Tar all necessary files
-      run: |
-        # List the files in /tmp directory to ensure docker-compose.yml is present
-        ls -l /tmp
-        # Create the tarball with the necessary files in /tmp
-        tar -czf /tmp/deploy.tar.gz -C /tmp target docker-compose.yml appname_${{ steps.version.outputs.version }}.tar
-        ls -l /tmp/deploy.tar.gz  # Verifying the tar file
-
-    - name: Deploy Docker Image and Files to EC2
+    - name: Deploy Docker Image to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.KEY }}
-        source: "/tmp/deploy.tar.gz"
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        source: './*'
         target: /tmp/
 
-    - name: SSH into EC2 and deploy
-      run: |
-        ssh -i ${{ secrets.KEY }} -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
-        # Move the tar file to the target directory
-        sudo mv /tmp/deploy.tar.gz /home/ubuntu/githubaction/
-        
-        # Extract the tar file
-        cd /home/ubuntu/githubaction
-        sudo tar -xzf deploy.tar.gz
-
-        # Load Docker image
-        sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
-
-        # Optionally, update docker-compose.yml with the new image version
-        sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
-
-        # Run the Docker containers using docker-compose
-        sudo docker-compose up -d
-        EOF
+    - name: Move All Files to Target Directory 
+      uses: JimCronqvist/action-ssh@master 
+      with: 
+        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
+        privateKey: ${{ secrets.SSH_KEY }} 
+        script: | 
+          sudo mv /tmp/* /home/ubuntu/githubaction/
+    - name: Load Docker Image on EC2 
+      uses: JimCronqvist/action-ssh@master 
+      with: 
+        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
+        privateKey: ${{ secrets.SSH_KEY }}
+        script: |
+          sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
+    - name: Update Docker Compose Version and Restart 
+      uses: JimCronqvist/action-ssh@master 
+      with:
+        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} 
+        privateKey: ${{ secrets.SSH_KEY }}
+        script: |
+          sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
+          cd /home/ubuntu/githubaction && sudo docker-compose up -d
