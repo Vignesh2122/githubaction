@@ -51,6 +51,9 @@ jobs:
     - name: Save Docker Image to File
       run: sudo docker save -o /home/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
 
+    - name : list
+      run : ls -l /home/runner/githubaction/
+
     - name: Deploy Docker Image and Target Directory to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
