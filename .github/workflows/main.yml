@@ -41,6 +41,9 @@ jobs:
     - name: Save Docker Image to File
       run: sudo docker save -o /tmp/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
 
+    - name: List files in /tmp for debugging
+      run: ls -la /tmp
+
     - name: Deploy Files to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
@@ -58,6 +61,16 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         script: |
           sudo mkdir -p /home/ubuntu/githubaction
+          sudo chown -R $USER:$USER /home/ubuntu/githubaction
+
+    - name: List files in /tmp on EC2 for debugging
+      uses: appleboy/ssh-action@v1.2.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          ls -la /tmp
 
     - name: Move Docker image to target directory
       uses: appleboy/ssh-action@v1.2.0
