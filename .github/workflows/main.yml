@@ -52,6 +52,7 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         source: './*'
         target: /tmp/
+        permission: 777
 
     - name: Add SSH Key
       uses: webfactory/ssh-agent@v0.5.0
