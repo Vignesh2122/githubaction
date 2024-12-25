@@ -2,12 +2,11 @@ name: Build and Deploy
 
 on:
   push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -49,52 +48,58 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         source: './target/*, /tmp/appname_${{ steps.version.outputs.version }}.tar'
-        target: /tmp
+        target: /tmp/pro/
 
     - name: Ensure target directory exists
-      uses: JimCronqvist/action-ssh@master
+      uses: appleboy/ssh-action@v1.2.0
       with:
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
-        privateKey: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           sudo mkdir -p /home/ubuntu/githubaction
 
     - name: Move Docker image to target directory
-      uses: JimCronqvist/action-ssh@master
+      uses: appleboy/ssh-action@v1.2.0
       with:
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
-        privateKey: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
-          sudo mv /tmp/appname_${{ steps.version.outputs.version }}.tar /home/ubuntu/githubaction/
+          sudo mv /tmp/pro/appname_${{ steps.version.outputs.version }}.tar /home/ubuntu/githubaction/
 
     - name: Move target directory files
-      uses: JimCronqvist/action-ssh@master
+      uses: appleboy/ssh-action@v1.2.0
       with:
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
-        privateKey: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
-          sudo mv /tmp/target/* /home/ubuntu/githubaction/
+          sudo mv /tmp/pro/target/* /home/ubuntu/githubaction/
 
     - name: Load Docker image
-      uses: JimCronqvist/action-ssh@master
+      uses: appleboy/ssh-action@v1.2.0
       with:
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
-        privateKey: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           sudo docker load -i /home/ubuntu/githubaction/appname_${{ steps.version.outputs.version }}.tar
 
     - name: Update docker-compose.yml
-      uses: JimCronqvist/action-ssh@master
+      uses: appleboy/ssh-action@v1.2.0
       with:
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
-        privateKey: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           sudo sed -i 's|image: appname|image: appname:${{ steps.version.outputs.version }}|' /home/ubuntu/githubaction/docker-compose.yml
 
     - name: Restart Docker containers using docker-compose
-      uses: JimCronqvist/action-ssh@master
+      uses: appleboy/ssh-action@v1.2.0
       with:
-        hosts: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
-        privateKey: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           cd /home/ubuntu/githubaction && sudo docker-compose up -d
