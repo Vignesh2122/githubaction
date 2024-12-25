@@ -41,14 +41,13 @@ jobs:
     - name: Verify Docker Image Existence
       run: sudo docker images
 
-    - name: Save Docker Image to File
-      run: sudo docker save -o /home/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
-
     - name: Create a directory and move files to /tmp
       run: |
         mkdir -p /home/runner/githubaction
         mv target /home/runner/githubaction/
         mv /home/runner/githubaction/* /tmp/
+    - name: Save Docker Image to File
+      run: sudo docker save -o /home/runner/githubaction/appname_${{ steps.version.outputs.version }}.tar appname:${{ steps.version.outputs.version }}
     
     - name: List files in /tmp for debugging
       run: ls -l /tmp/
