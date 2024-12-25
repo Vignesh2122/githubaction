@@ -50,7 +50,7 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         port : 22
-        source: './* ,/tmp//tmp/appname_${{ steps.version.outputs.version }}.tar'
+        source: './* ,/tmp/appname_${{ steps.version.outputs.version }}.tar'
         target: /tmp/
 
     - name: Move All Files to Target Directory 
