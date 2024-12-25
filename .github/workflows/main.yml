@@ -38,7 +38,7 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        sudo docker build -t appname:${{ steps.version.outputs.version }} -f /tmp/Dockerfile /tmp
+        sudo docker build -t appname:${{ steps.version.outputs.version }} .
 
     - name: Save Docker Image to File
       run: |
