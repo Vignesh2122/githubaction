@@ -37,7 +37,7 @@ jobs:
           increment: patch
 
       - name: Build Docker Image with version tag
-        run: docker build -t examples:${{ steps.version.outputs.version }} .
+        run: docker build -t local:example-${{ steps.version.outputs.version }} .
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -48,11 +48,11 @@ jobs:
 
       - name: Tag Docker Image for Amazon ECR
         run: |
-          docker tag local:examples${{ steps.version.outputs.version }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/local:examples${{ steps.version.outputs.version }}
+          docker tag local:example-${{ steps.version.outputs.version }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/local:example-${{ steps.version.outputs.version }}
 
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 471112905705.dkr.ecr.ap-south-1.amazonaws.com
 
       - name: Push Docker Image to Amazon ECR
-        run: docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/local:examples${{ steps.version.outputs.version }}
+        run: docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/local:example-${{ steps.version.outputs.version }}
