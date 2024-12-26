@@ -48,11 +48,11 @@ jobs:
 
       - name: Tag Docker Image for Amazon ECR
         run: |
-          docker tag examples:${{ steps.version.outputs.version }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/examples:${{ steps.version.outputs.version }}
+          docker tag local:examples${{ steps.version.outputs.version }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/local:examples${{ steps.version.outputs.version }}
 
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 471112905705.dkr.ecr.ap-south-1.amazonaws.com
 
       - name: Push Docker Image to Amazon ECR
-        run: docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/examples:${{ steps.version.outputs.version }}
+        run: docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/local:examples${{ steps.version.outputs.version }}
