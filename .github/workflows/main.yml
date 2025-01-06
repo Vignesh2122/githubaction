@@ -33,21 +33,32 @@ jobs:
       - name: Docker setup
         uses: docker/setup-buildx-action@v3
 
-      # Read and increment the version from VERSION file
+      # Increment Version Logic
       - name: Increment Version
         id: version
         run: |
+          # Check if VERSION file exists, if not create it with default version
+          if [ ! -f VERSION ]; then
+            echo "1.0.0" > VERSION
+          fi
+
+          # Read the current version from VERSION file
           VERSION=$(cat VERSION)
           echo "Current Version: $VERSION"
 
+          # Split the version into major, minor, and patch
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          
+          # Increment the patch version
           NEW_PATCH=$((PATCH + 1))
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+
+          # Output the new version
           echo "New Version: $NEW_VERSION"
 
-          # Update the VERSION file (only for this workflow run)
+          # Update the VERSION file with the new version
           echo $NEW_VERSION > VERSION
-          cat VERSION
+          cat VERSION  # Display the updated version file contents
 
           # Set output for later steps
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
@@ -75,3 +86,5 @@ jobs:
           docker build -t locals:$VERSION .
           docker tag locals:$VERSION 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
           docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
+
+      
