@@ -57,7 +57,7 @@ jobs:
           echo "New version: $NEW_VERSION"
 
           # Set output for later steps
-          echo "version=$NEW_VERSION" >> $GITHUB_ENV
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "::set-output name=version::$NEW_VERSION"
 
       # Configure AWS credentials
@@ -75,7 +75,10 @@ jobs:
 
       # Build and Push Docker Image
       - name: Build and Push Docker Image
+        env:
+          VERSION: ${{ env.NEW_VERSION }}
         run: |
-          docker build -t locals:${{ env.version }} .
-          docker tag locals:${{ env.version }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ env.version }}
-          docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ env.version }}
+          echo "Building Docker image with version: $VERSION"
+          docker build -t locals:$VERSION .
+          docker tag locals:$VERSION 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
+          docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
