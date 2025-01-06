@@ -27,7 +27,12 @@ public class Calculator {
         return a - b;
     }
 
-  
+    /**
+     * Multiplies two integers.
+     *
+     * @param a the first integer
+     * @param b the second integer
+     * @return the product of a and b
      */
     public int multiply(int a, int b) {
         return a * b;
@@ -96,3 +101,4 @@ public class Calculator {
         return a / b;
     }
 }
+
