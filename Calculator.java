@@ -1,7 +1,7 @@
 package com.example;
 
 /**
- * A simple Calculator class providing basic arithmetic operations.
+ s.
  */
 public class Calculator {
 
