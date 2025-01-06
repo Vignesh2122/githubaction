@@ -27,17 +27,30 @@ jobs:
         run: mvn clean install
     
       - name: Docker setup
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
-      - name: Get next version
-        id: version
-        uses: reecetech/version-increment@2024.10.1
+      - name: Create or update VERSION file
+        run: |
+          if [ ! -f VERSION ]; then
+            echo "1.0.0" > VERSION
+          fi
+
+      - name: Automatic Versioning
+        id: versioning_job
+        uses: nicupavel/action-files-version-increment@v3
         with:
-          scheme: semver
+          file_path: VERSION
           increment: patch
 
-      - name: Build Docker Image with version tag
-        run: docker build -t local:example-${{ steps.version.outputs.version }} .
+      - name: Get the output time
+        run: echo "The time was ${{ steps.versioning_job.outputs.time }}"
+
+      - name: Get list of modified files
+        run: echo "Modified files ${{ steps.versioning_job.outputs.modified_files }}"
+
+      - name: Read Version
+        id: version
+        run: echo "VERSION=$(cat VERSION)" >> $GITHUB_ENV
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -46,13 +59,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Tag Docker Image for Amazon ECR
-        run: |
-          docker tag local:example-${{ steps.version.outputs.version }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/local:example-${{ steps.version.outputs.version }}
-
       - name: Login to Amazon ECR
         run: |
-          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 471112905705.dkr.ecr.ap-south-1.amazonaws.com
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin 471112905705.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
 
-      - name: Push Docker Image to Amazon ECR
-        run: docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/local:example-${{ steps.version.outputs.version }}
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t 471112905705.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/local:example-${{ env.VERSION }} .
+          docker push 471112905705.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/local:example-${{ env.VERSION }}
