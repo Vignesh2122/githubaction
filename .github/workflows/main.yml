@@ -12,46 +12,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: true  
 
+      # Set up Java 21
       - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-    
+
+      # Build using Maven
       - name: Build using Maven
         run: mvn clean install
-    
+
+      # Set up Docker
       - name: Docker setup
         uses: docker/setup-buildx-action@v3
 
-      - name: Create or update VERSION file
-        run: |
-          if [ ! -f VERSION ]; then
-            echo "1.0.0" > VERSION
-          fi
-
-      - name: Automatic Versioning
-        id: versioning_job
-        uses: nicupavel/action-files-version-increment@v3
-        with:
-          file_path: VERSION
-          increment: patch
-
-      - name: Get the output time
-        run: echo "The time was ${{ steps.versioning_job.outputs.time }}"
-
-      - name: Get list of modified files
-        run: echo "Modified files ${{ steps.versioning_job.outputs.modified_files }}"
-
-      - name: Read Version
+      # Determine Version
+      - name: Determine Version
         id: version
-        run: echo "VERSION=$(cat VERSION)" >> $GITHUB_ENV
+        run: |
+          # Define the major version (set this manually or dynamically if needed)
+          MAJOR_VERSION=1
 
+          # Get the latest tag (or default to 1.0 if no tag exists)
+          LATEST_TAG=$(git describe --tags --match "${MAJOR_VERSION}.*" --abbrev=0 2>/dev/null || echo "${MAJOR_VERSION}.0")
+          echo "Latest tag: $LATEST_TAG"
+
+          # Extract the minor version and increment it
+          MINOR_VERSION=$(echo $LATEST_TAG | awk -F. '{print $2}')
+          NEW_MINOR_VERSION=$((MINOR_VERSION + 1))
+
+          # Construct the new version
+          NEW_VERSION="${MAJOR_VERSION}.${NEW_MINOR_VERSION}"
+          echo "New version: $NEW_VERSION"
+
+          # Set output for later steps
+          echo "version=$NEW_VERSION" >> $GITHUB_ENV
+          echo "::set-output name=version::$NEW_VERSION"
+
+      # Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -59,11 +64,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # Login to Amazon ECR
       - name: Login to Amazon ECR
         run: |
-          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin 471112905705.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 471112905705.dkr.ecr.ap-south-1.amazonaws.com
 
+      # Build and Push Docker Image
       - name: Build and Push Docker Image
         run: |
-          docker build -t 471112905705.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/local:example-${{ env.VERSION }} .
-          docker push 471112905705.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/local:example-${{ env.VERSION }}
+          docker build -t locals:${{ env.version }} .
+          docker tag locals:${{ env.version }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ env.version }}
+          docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ env.version }}
