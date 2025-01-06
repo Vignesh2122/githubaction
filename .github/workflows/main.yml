@@ -33,32 +33,27 @@ jobs:
       - name: Docker setup
         uses: docker/setup-buildx-action@v3
 
-      # Determine Version
-      - name: Determine Version
+      # Create or update VERSION file
+      - name: Create or update VERSION file
+        run: |
+          if [ ! -f VERSION ]; then
+            echo "1.0.0" > VERSION
+          fi
+
+      # Increment Version
+      - name: Increment Version
         id: version
         run: |
-          # Define the major version (set this manually or dynamically if needed)
-          MAJOR_VERSION=1
-
-          # Fetch the latest tag matching the major version or default to "1.0"
-          LATEST_TAG=$(git tag -l "${MAJOR_VERSION}.*" | sort -V | tail -n 1)
-          if [ -z "$LATEST_TAG" ]; then
-            echo "No tags found, starting from 1.0"
-            LATEST_TAG="${MAJOR_VERSION}.0"
-          fi
-          echo "Latest tag: $LATEST_TAG"
-
-          # Extract the minor version and increment it
-          MINOR_VERSION=$(echo "$LATEST_TAG" | awk -F. '{print $2}')
-          NEW_MINOR_VERSION=$((MINOR_VERSION + 1))
-
-          # Construct the new version
-          NEW_VERSION="${MAJOR_VERSION}.${NEW_MINOR_VERSION}"
-          echo "New version: $NEW_VERSION"
-
-          # Set output for later steps
+          VERSION=$(cat VERSION)
+          MAJOR=$(echo $VERSION | awk -F. '{print $1}')
+          MINOR=$(echo $VERSION | awk -F. '{print $2}')
+          PATCH=$(echo $VERSION | awk -F. '{print $3}')
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          echo $NEW_VERSION > VERSION
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          echo "::set-output name=version::$NEW_VERSION"
+
+     
 
       # Configure AWS credentials
       - name: Configure AWS credentials
