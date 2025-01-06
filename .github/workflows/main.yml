@@ -33,26 +33,19 @@ jobs:
       - name: Docker setup
         uses: docker/setup-buildx-action@v3
 
-      # Create or update VERSION file
-      - name: Create or update VERSION file
-        run: |
-          if [ ! -f VERSION ]; then
-            echo "1.0.0" > VERSION  # Initialize with version 1.0.0 if the file doesn't exist
-          fi
-          VERSION=$(cat VERSION)
-          echo "Current Version: $VERSION"
-
-      # Increment Version
+      # Read and increment the version from VERSION file
       - name: Increment Version
         id: version
         run: |
           VERSION=$(cat VERSION)
+          echo "Current Version: $VERSION"
+
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
           NEW_PATCH=$((PATCH + 1))
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
           echo "New Version: $NEW_VERSION"
-          
-          # Update the VERSION file
+
+          # Update the VERSION file (only for this workflow run)
           echo $NEW_VERSION > VERSION
           cat VERSION
 
