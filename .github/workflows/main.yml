@@ -16,30 +16,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Get the next version using reecetech/version-increment
+      # Step 2: Get the next version
       - name: Get next version
         uses: reecetech/version-increment@2024.10.1
         id: version
         with:
-          use_api: true
+          scheme: semver
+          increment: patch
 
-      # Step 3: Output the new version
-      - name: Show the new version
-        run: echo "New Version: ${{ steps.version.outputs.next_version }}"
-      
-      # Step 4: Update VERSION file locally
-      - name: Update VERSION file
+      # Step 3: Debug version output
+      - name: Debug Outputs
         run: |
-          echo "${{ steps.version.outputs.next_version }}" > VERSION
+          echo "Next version: ${{ steps.version.outputs.next_version }}"
 
-      # Step 5: Build the Spring Boot application
+      # Step 4: Build with Maven
       - name: Build with Maven
         run: mvn clean install
 
-      # Step 6: Build and Push Docker Image
+      # Step 5: Build and Push Docker Image
       - name: Build and Push Docker Image
+        env:
+          VERSION: ${{ steps.version.outputs.next_version }}
         run: |
-          VERSION=$(cat VERSION)
+          echo "Building Docker image with version: $VERSION"
           docker build -t locals:$VERSION .
           docker tag locals:$VERSION 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
           docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
