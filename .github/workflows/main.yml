@@ -12,28 +12,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
+      # Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure the full history is fetched to access all tags
 
-      # Step 2: Set up AWS credentials
-      - name: Set up AWS credentials
+      # Set up Java 21
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Build using Maven
+      - name: Build using Maven
+        run: mvn clean install
+
+      # Set up Docker
+      - name: Docker setup
+        uses: docker/setup-buildx-action@v3
+
+      # Configure AWS credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 3: Debug build number
-      - name: Debug Build Number
+      # Login to Amazon ECR
+      - name: Login to Amazon ECR
         run: |
-          echo "Build Number: ${{ github.run_number }}"
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 471112905705.dkr.ecr.ap-south-1.amazonaws.com
 
-      # Step 4: Build with Maven
-      - name: Build with Maven
-        run: mvn clean install
-
-      # Step 5: Build and Push Docker Image
+      # Build and Push Docker Image
       - name: Build and Push Docker Image
         run: |
           echo "Building Docker image with build number: ${{ github.run_number }}"
