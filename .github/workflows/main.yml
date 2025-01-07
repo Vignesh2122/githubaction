@@ -50,6 +50,6 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           echo "Building Docker image with build number: ${{ github.run_number }}"
-          docker build -t locals:example:${{ github.run_number }} .
-          docker tag locals:example-${{ github.run_number }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:example:${{ github.run_number }}
-          docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:example:${{ github.run_number }}
+          docker build -t locals:example-${{ github.run_number }} .
+          docker tag locals:example-${{ github.run_number }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:example-${{ github.run_number }}
+          docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:example-${{ github.run_number }}
