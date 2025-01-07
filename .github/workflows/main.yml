@@ -16,20 +16,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Debug build number
+      # Step 2: Set up AWS credentials
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Step 3: Debug build number
       - name: Debug Build Number
         run: |
           echo "Build Number: ${{ github.run_number }}"
 
-      # Step 3: Build with Maven
+      # Step 4: Build with Maven
       - name: Build with Maven
         run: mvn clean install
 
-      # Step 4: Build and Push Docker Image
+      # Step 5: Build and Push Docker Image
       - name: Build and Push Docker Image
         run: |
           echo "Building Docker image with build number: ${{ github.run_number }}"
           docker build -t locals:${{ github.run_number }} .
           docker tag locals:${{ github.run_number }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ github.run_number }}
           docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ github.run_number }}
-
