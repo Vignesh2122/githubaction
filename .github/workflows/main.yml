@@ -16,29 +16,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Get the next version
-      - name: Get next version
-        uses: reecetech/version-increment@2024.10.1
-        id: version
-        with:
-          scheme: semver
-          increment: patch
-
-      # Step 3: Debug version output
-      - name: Debug Outputs
+      # Step 2: Debug build number
+      - name: Debug Build Number
         run: |
-          echo "Next version: ${{ steps.version.outputs.next_version }}"
+          echo "Build Number: ${{ github.run_number }}"
 
-      # Step 4: Build with Maven
+      # Step 3: Build with Maven
       - name: Build with Maven
         run: mvn clean install
 
-      # Step 5: Build and Push Docker Image
+      # Step 4: Build and Push Docker Image
       - name: Build and Push Docker Image
-        env:
-          VERSION: ${{ steps.version.outputs.next_version }}
         run: |
-          echo "Building Docker image with version: $VERSION"
-          docker build -t locals:$VERSION .
-          docker tag locals:$VERSION 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
-          docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
+          echo "Building Docker image with build number: ${{ github.run_number }}"
+          docker build -t locals:${{ github.run_number }} .
+          docker tag locals:${{ github.run_number }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ github.run_number }}
+          docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ github.run_number }}
+
