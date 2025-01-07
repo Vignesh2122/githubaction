@@ -12,40 +12,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code
+      # Step 1: Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Update and Increment Version
-      - name: Increment Version
+      # Step 2: Get the next version using reecetech/version-increment
+      - name: Get next version
+        uses: reecetech/version-increment@2024.10.1
         id: version
-        run: |
-          if [ ! -f VERSION ]; then
-            echo "VERSION file not found! Exiting."
-            exit 1
-          fi
-          VERSION=$(cat VERSION)
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          NEW_PATCH=$((PATCH + 1))
-          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-          echo $NEW_VERSION > VERSION
-          echo "New version: $NEW_VERSION"
-          echo "version=$NEW_VERSION" >> $GITHUB_ENV
+        with:
+          use_api: true
 
-      # Commit Updated VERSION File
-      - name: Commit Updated VERSION
+      # Step 3: Output the new version
+      - name: Show the new version
+        run: echo "New Version: ${{ steps.version.outputs.next_version }}"
+      
+      # Step 4: Update VERSION file locally
+      - name: Update VERSION file
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add VERSION
-          git commit -m "Update version to ${{ env.version }}"
-          git push
+          echo "${{ steps.version.outputs.next_version }}" > VERSION
 
-      # Build and Push Docker Image
+      # Step 5: Build the Spring Boot application
+      - name: Build with Maven
+        run: mvn clean install
+
+      # Step 6: Build and Push Docker Image
       - name: Build and Push Docker Image
         run: |
           VERSION=$(cat VERSION)
-          echo "Building Docker image with version: $VERSION"
           docker build -t locals:$VERSION .
           docker tag locals:$VERSION 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
           docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:$VERSION
