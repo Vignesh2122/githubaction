@@ -58,7 +58,7 @@ jobs:
       - name: Execute SSM Document
         run: |
           aws ssm send-command \
-            --instance-ids "i-0998809faa02ad79f \
+            --instance-ids "i-0998809faa02ad79f "\
             --document-name "hello" \
             --comment "Running SSM Document from GitHub Actions"
         env:
