@@ -54,11 +54,20 @@ jobs:
           docker tag locals:${{ github.run_number }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ github.run_number }}
           docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ github.run_number }}
 
+      # Store the build number in SSM Parameter Store
+      - name: Store Build Number in SSM Parameter Store
+        run: |
+          aws ssm put-parameter --name "/myapp/build-number" --value "${{ github.run_number }}" --type "String" --overwrite
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
       # Execute SSM Document
       - name: Execute SSM Document
         run: |
           aws ssm send-command \
-            --instance-ids "i-0998809faa02ad79f"\
+            --instance-ids "i-0998809faa02ad79f" \
             --document-name "hello" \
             --comment "Running SSM Document from GitHub Actions"
         env:
