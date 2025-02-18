@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   schedule:
-    - cron: '* * * * *'  # Runs every minute in UTC time
+    #- cron: '* * * * *'  # Runs every minute in UTC time
 
 jobs:
   build:
