@@ -5,6 +5,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: '*/2 * * * *'  # Every 2 minutes in UTC time
 
 jobs:
   build:
@@ -12,28 +14,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Ensure the full history is fetched to access all tags
 
-      # Set up Java 21
       - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # Build using Maven
       - name: Build using Maven
         run: mvn clean install
 
-      # Set up Docker
       - name: Docker setup
         uses: docker/setup-buildx-action@v3
 
-      # Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -41,12 +38,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Login to Amazon ECR
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 471112905705.dkr.ecr.ap-south-1.amazonaws.com
 
-      # Build and Push Docker Image
       - name: Build and Push Docker Image
         run: |
           echo "Building Docker image with build number: ${{ github.run_number }}"
@@ -54,7 +49,6 @@ jobs:
           docker tag locals:${{ github.run_number }} 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ github.run_number }}
           docker push 471112905705.dkr.ecr.ap-south-1.amazonaws.com/locals:${{ github.run_number }}
 
-      # Store the build number in SSM Parameter Store
       - name: Store Build Number in SSM Parameter Store
         run: |
           aws ssm put-parameter --name "/myapp/build-number" --value "${{ github.run_number }}" --type "String" --overwrite
@@ -63,7 +57,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
-      # Execute SSM Document
       - name: Execute SSM Document
         run: |
           aws ssm send-command \
