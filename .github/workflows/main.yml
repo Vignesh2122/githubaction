@@ -10,25 +10,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Log in to Azure
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Log in to Azure Container Registry
-      run: |
-        az acr login --name demoimage
+      - name: Log in to Azure Container Registry
+        run: |
+          az acr login --name demoimage
 
-    - name: Build Docker Image
-      run: |
-        docker build -t demoimage.azurecr.io/demo:${{ github.sha }} .
-        docker tag demoimage.azurecr.io/pyapp:${{ github.sha }} demoimage.azurecr.io/pyapp:latest
+      - name: Build Docker Image
+        run: |
+          docker build -t demoimage.azurecr.io/demo:${{ github.run_id }} .
+          docker tag demoimage.azurecr.io/demo:${{ github.run_id }} demoimage.azurecr.io/demo:latest
 
-    - name: Push Docker Image to ACR
-      run: |
-        docker push demoimage.azurecr.io/demo:${{ github.sha }}
-        docker push demoimage.azurecr.io/demo:${{github.sh}}
-
+      - name: Push Docker Image to ACR
+        run: |
+          docker push demoimage.azurecr.io/demo:${{ github.run_id }}
+          
