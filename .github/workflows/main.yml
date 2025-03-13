@@ -24,6 +24,11 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
+      - name: Download Trivy GitLab Template
+        run: |
+          mkdir -p contrib
+          curl -o contrib/gitlab.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/gitlab.tpl
+
       - name: Scan Docker Image with Trivy (Markdown Output)
         run: |
           trivy image --format template --template "@contrib/gitlab.tpl" -o trivy-report.md my-app:latest
@@ -43,6 +48,6 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "Trivy Scan Report (Markdown)"
           body: "Find the attached Trivy scan report."
-          to: vigneshvd694@gmail.com
-          from: vigneshvd694@gmail.com
+          to: security-team@example.com
+          from: github-actions@example.com
           attachments: trivy-report.md
