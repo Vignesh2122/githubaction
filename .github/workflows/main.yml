@@ -1,4 +1,4 @@
-name: Build, Security Scan (Trivy & OWASP), and Report
+name: Build, Security Scan (Trivy), and Report
 
 on:
   push:
@@ -28,56 +28,30 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      # 🔹 Download Trivy GitLab Template
-      - name: Download Trivy GitLab Template
-        run: |
-          mkdir -p contrib
-          curl -o contrib/gitlab.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/gitlab.tpl
-
-      # 🔹 Scan Docker Image with Trivy (Markdown Output)
+      # 🔹 Run Trivy Scan and Save Report (HTML Format)
       - name: Scan Docker Image with Trivy
         run: |
-          trivy image --format template --template "@contrib/gitlab.tpl" -o trivy-report.md my-app:latest
+          trivy image --severity HIGH,CRITICAL --format html -o trivy-report.html my-app:latest
+          cat trivy-report.html  # Display report in logs (optional)
 
-      # 🔹 Install OWASP Dependency-Check
-      - name: Install OWASP Dependency-Check
-        run: |
-          curl -LO https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
-          unzip dependency-check-9.0.9-release.zip
-          mv dependency-check /usr/local/bin/
-          rm dependency-check-9.0.9-release.zip
-
-      # 🔹 Run OWASP Dependency-Check (Skip Update)
-      - name: Run OWASP Dependency-Check
-        run: |
-          mkdir -p owasp-report
-          /usr/local/bin/dependency-check/bin/dependency-check.sh --scan . --format "ALL" --out owasp-report --noupdate
-
-      # 🔹 Upload Security Reports
+      # 🔹 Upload Trivy Report as Artifact
       - name: Upload Trivy Report
         uses: actions/upload-artifact@v4
         with:
           name: trivy-report
-          path: trivy-report.md
+          path: trivy-report.html
 
-      - name: Upload OWASP Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: owasp-report
-          path: owasp-report/
-
-      # 🔹 Send Security Reports via Email
-      - name: Send Security Reports via Email
+      # 🔹 Send Email if Vulnerabilities Found
+      - name: Send Security Report via Email
+        if: failure()
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 587
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Security Scan Report (Trivy & OWASP)"
-          body: "Find the attached security scan reports."
+          subject: "❗ Security Scan Failed (Trivy)"
+          body: "Trivy found vulnerabilities in the latest scan. See the attached report."
           to: vigneshvd694@gmail.com
           from: vigneshvd694@gmail.com
-          attachments: |
-            trivy-report.md
-            owasp-report/dependency-check-report.html
+          attachments: "trivy-report.html"
