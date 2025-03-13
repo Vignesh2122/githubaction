@@ -47,14 +47,7 @@ jobs:
           mv dependency-check /usr/local/bin/
           rm dependency-check-9.0.9-release.zip
 
-      # 🔹 Use Prebuilt OWASP NVD Database (No API Key Required)
-      - name: Download Prebuilt NVD Database
-        run: |
-          curl -LO https://github.com/jeremylong/DependencyCheck/releases/latest/download/data.tar.zst
-          mkdir -p ~/.dependency-check/data
-          tar --use-compress-program=unzstd -xvf data.tar.zst -C ~/.dependency-check/data
-
-      # 🔹 Run OWASP Dependency-Check (Offline Mode)
+      # 🔹 Run OWASP Dependency-Check (Skip Update)
       - name: Run OWASP Dependency-Check
         run: |
           mkdir -p owasp-report
