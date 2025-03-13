@@ -28,10 +28,16 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
+      # 🔹 Ensure HTML Template is Available
+      - name: Download Trivy HTML Template
+        run: |
+          mkdir -p /usr/local/share/trivy/templates
+          curl -o /usr/local/share/trivy/templates/html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
+
       # 🔹 Run Trivy Scan and Save Report (HTML Format)
       - name: Scan Docker Image with Trivy
         run: |
-          trivy image --severity HIGH,CRITICAL --format html -o trivy-report.html my-app:latest
+          trivy image --severity HIGH,CRITICAL --format template --template "@/usr/local/share/trivy/templates/html.tpl" -o trivy-report.html my-app:latest
           cat trivy-report.html  # Display report in logs (optional)
 
       # 🔹 Upload Trivy Report as Artifact
