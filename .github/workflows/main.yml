@@ -10,12 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 🔹 Checkout Repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 🔹 Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # 🔹 Build Docker Image
       - name: Build Docker Image
         run: |
           docker build -t my-app:latest .
@@ -25,6 +28,7 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
+      # 🔹 Download Trivy GitLab Template
       - name: Download Trivy GitLab Template
         run: |
           mkdir -p contrib
@@ -43,11 +47,18 @@ jobs:
           mv dependency-check /usr/local/bin/
           rm dependency-check-9.0.9-release.zip
 
-      # 🔹 Run OWASP Dependency-Check (Auto-updates DB)
+      # 🔹 Use Prebuilt OWASP NVD Database (No API Key Required)
+      - name: Download Prebuilt NVD Database
+        run: |
+          curl -LO https://github.com/jeremylong/DependencyCheck/releases/latest/download/data.tar.zst
+          mkdir -p ~/.dependency-check/data
+          tar --use-compress-program=unzstd -xvf data.tar.zst -C ~/.dependency-check/data
+
+      # 🔹 Run OWASP Dependency-Check (Offline Mode)
       - name: Run OWASP Dependency-Check
         run: |
           mkdir -p owasp-report
-          /usr/local/bin/dependency-check/bin/dependency-check.sh --scan . --format "ALL" --out owasp-report
+          /usr/local/bin/dependency-check/bin/dependency-check.sh --scan . --format "ALL" --out owasp-report --noupdate
 
       # 🔹 Upload Security Reports
       - name: Upload Trivy Report
