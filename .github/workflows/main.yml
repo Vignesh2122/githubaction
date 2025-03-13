@@ -46,6 +46,7 @@ jobs:
       # 🔹 Run OWASP Dependency-Check
       - name: Run OWASP Dependency-Check
         run: |
+          mkdir -p owasp-report
           /usr/local/bin/dependency-check/bin/dependency-check.sh --scan . --format "ALL" --out owasp-report
 
       # 🔹 Upload Security Reports
@@ -71,8 +72,8 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "Security Scan Report (Trivy & OWASP)"
           body: "Find the attached security scan reports."
-          to: security-team@example.com
-          from: github-actions@example.com
+          to: vigneshvd694@gmail.com
+          from: vigneshvd694@gmail.com
           attachments: |
             trivy-report.md
             owasp-report/dependency-check-report.html
