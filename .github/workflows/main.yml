@@ -1,33 +1,61 @@
-name: Build and Push Docker Image to ACR
+name: Build and Trivy Scan with PDF Report
 
 on:
   push:
     branches:
-      - main  
+      - main
 
 jobs:
-  build-and-push:
+  build_scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Log in to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Log in to Azure Container Registry
-        run: |
-          az acr login --name demoimage
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build Docker Image
         run: |
-          docker build -t demoimage.azurecr.io/demo:${{ github.run_id }} .
-          docker tag demoimage.azurecr.io/demo:${{ github.run_id }} demoimage.azurecr.io/demo:latest
+          docker build -t my-app:latest .
 
-      - name: Push Docker Image to ACR
+      - name: Install Trivy
         run: |
-          docker push demoimage.azurecr.io/demo:${{ github.run_id }}
-          
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Scan Docker Image with Trivy
+        run: |
+          trivy image --format json -o trivy-report.json my-app:latest
+
+      - name: Install Pandoc and LaTeX for PDF conversion
+        run: |
+          sudo apt update
+          sudo apt install -y pandoc texlive-xetex
+
+      - name: Convert JSON to Markdown
+        run: |
+          jq -r '.Results[] | "### \(.Target)\n\n**Severity:** \(.Vulnerabilities[].Severity)\n\n**Package:** \(.Vulnerabilities[].PkgName)\n\n**Description:** \(.Vulnerabilities[].Description)\n\n---"' trivy-report.json > trivy-report.md
+
+      - name: Convert Markdown to PDF
+        run: |
+          pandoc trivy-report.md -o trivy-report.pdf --pdf-engine=xelatex
+
+      - name: Upload Trivy PDF Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-pdf-report
+          path: trivy-report.pdf
+
+      - name: Send Trivy Report via Email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Trivy Scan PDF Report for my-app"
+          body: "Find the attached Trivy scan report."
+          to: security-team@example.com
+          from: github-actions@example.com
+          attachments: trivy-report.pdf
