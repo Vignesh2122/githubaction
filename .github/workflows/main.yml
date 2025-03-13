@@ -43,12 +43,7 @@ jobs:
           mv dependency-check /usr/local/bin/
           rm dependency-check-9.0.9-release.zip
 
-      # 🔹 Update OWASP Database Before Scanning
-      - name: Update OWASP Database
-        run: |
-          /usr/local/bin/dependency-check/bin/dependency-check.sh --update-only
-
-      # 🔹 Run OWASP Dependency-Check
+      # 🔹 Run OWASP Dependency-Check (Auto-updates DB)
       - name: Run OWASP Dependency-Check
         run: |
           mkdir -p owasp-report
