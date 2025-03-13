@@ -1,4 +1,4 @@
-name: Build and Trivy Scan with Plain HTML Report
+name: Build and Trivy Scan with Markdown Report
 
 on:
   push:
@@ -24,20 +24,15 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Download Trivy HTML Template
+      - name: Scan Docker Image with Trivy (Markdown Output)
         run: |
-          mkdir -p contrib
-          curl -o contrib/html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
+          trivy image --format template --template "@contrib/gitlab.tpl" -o trivy-report.md my-app:latest
 
-      - name: Scan Docker Image with Trivy (HTML Output)
-        run: |
-          trivy image --format template --template "@contrib/html.tpl" -o trivy-report.html my-app:latest
-
-      - name: Upload Trivy HTML Report
+      - name: Upload Trivy Markdown Report
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-html-report
-          path: trivy-report.html
+          name: trivy-md-report
+          path: trivy-report.md
 
       - name: Send Trivy Report via Email
         uses: dawidd6/action-send-mail@v3
@@ -46,8 +41,8 @@ jobs:
           server_port: 587
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Trivy Scan Report"
+          subject: "Trivy Scan Report (Markdown)"
           body: "Find the attached Trivy scan report."
-          to: security-team@example.com
-          from: github-actions@example.com
-          attachments: trivy-report.html
+          to: vigneshvd694@gmail.com
+          from: vigneshvd694@gmail.com
+          attachments: trivy-report.md
