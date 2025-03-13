@@ -24,13 +24,14 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
+      - name: Download Trivy HTML Template
+        run: |
+          mkdir -p contrib
+          curl -o contrib/html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
+
       - name: Scan Docker Image with Trivy (HTML Output)
         run: |
           trivy image --format template --template "@contrib/html.tpl" -o trivy-report.html my-app:latest
-
-      - name : view
-        run : |
-          ls -lrt
 
       - name: Upload Trivy HTML Report
         uses: actions/upload-artifact@v4
