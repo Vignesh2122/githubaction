@@ -28,6 +28,10 @@ jobs:
         run: |
           trivy image --format template --template "@contrib/html.tpl" -o trivy-report.html my-app:latest
 
+      - name : view
+        run : |
+          ls -lrt
+
       - name: Upload Trivy HTML Report
         uses: actions/upload-artifact@v4
         with:
