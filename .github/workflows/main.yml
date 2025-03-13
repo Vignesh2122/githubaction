@@ -1,4 +1,4 @@
-name: Build and Trivy Scan with PDF Report
+name: Build, Security Scan (Trivy & OWASP), and Report
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build_scan:
+  security_scan:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,6 +20,7 @@ jobs:
         run: |
           docker build -t my-app:latest .
 
+      # 🔹 Install Trivy
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
@@ -29,34 +30,49 @@ jobs:
           mkdir -p contrib
           curl -o contrib/gitlab.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/gitlab.tpl
 
-      - name: Scan Docker Image with Trivy (Markdown Output)
+      # 🔹 Scan Docker Image with Trivy (Markdown Output)
+      - name: Scan Docker Image with Trivy
         run: |
           trivy image --format template --template "@contrib/gitlab.tpl" -o trivy-report.md my-app:latest
 
-      - name: Install Pandoc (For PDF Conversion)
+      # 🔹 Install OWASP Dependency-Check
+      - name: Install OWASP Dependency-Check
         run: |
-          sudo apt update
-          sudo apt install -y pandoc texlive-xetex
+          curl -LO https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
+          unzip dependency-check-9.0.9-release.zip
+          mv dependency-check /usr/local/bin/dependency-check
+          rm dependency-check-9.0.9-release.zip
 
-      - name: Convert Markdown to PDF
+      # 🔹 Run OWASP Dependency-Check
+      - name: Run OWASP Dependency-Check
         run: |
-          pandoc trivy-report.md -o trivy-report.pdf --pdf-engine=xelatex
+          /usr/local/bin/dependency-check/bin/dependency-check.sh --scan . --format "ALL" --out owasp-report
 
-      - name: Upload Trivy PDF Report
+      # 🔹 Upload Security Reports
+      - name: Upload Trivy Report
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-pdf-report
-          path: trivy-report.pdf
+          name: trivy-report
+          path: trivy-report.md
 
-      - name: Send Trivy Report via Email
+      - name: Upload OWASP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-report
+          path: owasp-report/
+
+      # 🔹 Send Security Reports via Email
+      - name: Send Security Reports via Email
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 587
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Trivy Scan Report (PDF)"
-          body: "Find the attached Trivy scan report."
-          to: vigneshvd694@gmail.com
-          from: vigneshvd694@gmail.com
-          attachments: trivy-report.pdf
+          subject: "Security Scan Report (Trivy & OWASP)"
+          body: "Find the attached security scan reports."
+          to: security-team@example.com
+          from: github-actions@example.com
+          attachments: |
+            trivy-report.md
+            owasp-report/dependency-check-report.html
