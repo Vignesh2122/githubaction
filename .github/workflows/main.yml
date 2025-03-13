@@ -1,4 +1,4 @@
-name: Build and Trivy Scan with Markdown Report
+name: Build and Trivy Scan with PDF Report
 
 on:
   push:
@@ -33,11 +33,20 @@ jobs:
         run: |
           trivy image --format template --template "@contrib/gitlab.tpl" -o trivy-report.md my-app:latest
 
-      - name: Upload Trivy Markdown Report
+      - name: Install Pandoc (For PDF Conversion)
+        run: |
+          sudo apt update
+          sudo apt install -y pandoc texlive-xetex
+
+      - name: Convert Markdown to PDF
+        run: |
+          pandoc trivy-report.md -o trivy-report.pdf --pdf-engine=xelatex
+
+      - name: Upload Trivy PDF Report
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-md-report
-          path: trivy-report.md
+          name: trivy-pdf-report
+          path: trivy-report.pdf
 
       - name: Send Trivy Report via Email
         uses: dawidd6/action-send-mail@v3
@@ -46,8 +55,8 @@ jobs:
           server_port: 587
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Trivy Scan Report (Markdown)"
+          subject: "Trivy Scan Report (PDF)"
           body: "Find the attached Trivy scan report."
-          to: security-team@example.com
-          from: github-actions@example.com
-          attachments: trivy-report.md
+          to: vigneshvd694@gmail.com
+          from: vigneshvd694@gmail.com
+          attachments: trivy-report.pdf
