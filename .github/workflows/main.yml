@@ -1,4 +1,4 @@
-name: build
+name: Security Scan with Trivy
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
   pull_request:
 
 jobs:
-  build:
-    name: Build
+  security_scan:
+    name: Security Scan
     runs-on: ubuntu-20.04
 
     steps:
@@ -21,26 +21,26 @@ jobs:
         run: docker build -t app:latest .
 
       # 🔹 Run Trivy vulnerability scanner (Table Format)
-      - name: Run Trivy vulnerability scanner
+      - name: Run Trivy vulnerability scanner (Log Output)
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: 'app:latest'
-          format: 'template'
+          format: 'table'
           exit-code: 0
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-      # 🔹 Ensure HTML Template is Available
+      # 🔹 Download Trivy HTML Template (User-Writable Directory)
       - name: Download Trivy HTML Template
         run: |
-          mkdir -p /usr/local/share/trivy/templates
-          curl -o /usr/local/share/trivy/templates/html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
+          mkdir -p $HOME/.trivy/templates
+          curl -o $HOME/.trivy/templates/html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
 
       # 🔹 Run Trivy Again to Generate HTML Report
       - name: Generate Trivy HTML Report
         run: |
-          trivy image --severity CRITICAL,HIGH --format template --template "@/usr/local/share/trivy/templates/html.tpl" -o trivy-report.html app:latest
+          trivy image --severity CRITICAL,HIGH --format template --template "$HOME/.trivy/templates/html.tpl" -o trivy-report.html app:latest
 
       # 🔹 Upload Trivy Report as Artifact
       - name: Upload Trivy Report
