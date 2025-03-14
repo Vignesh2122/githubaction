@@ -26,7 +26,6 @@ jobs:
           mkdir -p contrib
           curl -o contrib/html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
 
-      
       - name: Scan Docker Image with Trivy (HTML Output)
         run: |
           trivy image --format template --template "@contrib/html.tpl" -o trivy-report.html my-app:latest
@@ -44,19 +43,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
       
-      - name: Generate simple artifact path
-        id: artifact-path
-        run: |
-          TIMESTAMP=$(date +%Y%m%d)
-          ARTIFACT_PATH="trivy-scans/${TIMESTAMP}-${GITHUB_SHA:0:7}"
-          echo "ARTIFACT_PATH=${ARTIFACT_PATH}" >> $GITHUB_ENV
-          echo "Generated path: ${ARTIFACT_PATH}"
-      
-      - name: Upload Trivy Report to S3
+      - name: Upload Trivy Reports to S3
         run: |
           aws s3 cp trivy-report.html s3://${{ secrets.S3_BUCKET_NAME }}/${{ env.ARTIFACT_PATH }}/trivy-report.html
-          echo "Trivy report uploaded to S3: s3://${{ secrets.S3_BUCKET_NAME }}/${{ env.ARTIFACT_PATH }}/trivy-report.html"
-          echo "S3_REPORT_URL=https://${{ secrets.S3_BUCKET_NAME }}.s3.amazonaws.com/${{ env.ARTIFACT_PATH }}/trivy-report.html" >> $GITHUB_ENV
+          echo "S3_HTML_REPORT_URL=https://${{ secrets.S3_BUCKET_NAME }}.s3.amazonaws.com/${{ env.ARTIFACT_PATH }}/trivy-report.html" >> $GITHUB_ENV
       
       - name: Send Trivy Report via Email
         uses: dawidd6/action-send-mail@v3
