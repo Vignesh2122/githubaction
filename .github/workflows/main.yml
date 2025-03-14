@@ -1,27 +1,16 @@
-name: Security Scan with Trivy
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-
 jobs:
   security_scan:
     name: Security Scan
     runs-on: ubuntu-20.04
 
     steps:
-      # 🔹 Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 🔹 Build Docker Image (Tag: app:latest)
       - name: Build an image from Dockerfile
         run: docker build -t app:latest .
 
-      # 🔹 Run Trivy vulnerability scanner (Table Format)
-      - name: Run Trivy vulnerability scanner (Log Output)
+      - name: Run Trivy vulnerability scanner (Table Format)
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: 'app:latest'
@@ -31,25 +20,29 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-      # 🔹 Download Trivy HTML Template (User-Writable Directory)
       - name: Download Trivy HTML Template
         run: |
           mkdir -p $HOME/.trivy/templates
           curl -o $HOME/.trivy/templates/html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
 
-      # 🔹 Run Trivy Again to Generate HTML Report
       - name: Generate Trivy HTML Report
         run: |
           trivy image --severity CRITICAL,HIGH --format template --template "$HOME/.trivy/templates/html.tpl" -o trivy-report.html app:latest
 
-      # 🔹 Upload Trivy Report as Artifact
+      - name: Verify Trivy Report
+        run: |
+          if [ ! -s trivy-report.html ]; then
+            echo "❌ Trivy report is empty! Scan might have failed or found no vulnerabilities."
+            exit 1
+          fi
+
       - name: Upload Trivy Report
         uses: actions/upload-artifact@v4
         with:
           name: trivy-report
           path: trivy-report.html
+          if-no-files-found: error
 
-      # 🔹 Send Email if Vulnerabilities Found
       - name: Send Security Report via Email
         if: failure()
         uses: dawidd6/action-send-mail@v3
