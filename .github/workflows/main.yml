@@ -1,7 +1,7 @@
-name: Build and Trivy Scan with Markdown Report
+name: Build and Trivy Scan with HTML Report
 on: 
   push:
-    branches:
+    branches: 
       - main
 jobs:
   build_scan:
@@ -9,56 +9,50 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+      
       - name: Build Docker Image
         run: |
           docker build -t my-app:latest .
-          
+      
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          
-      - name: Download Trivy GitLab Template
+      
+      - name: Scan Docker Image with Trivy (HTML Output)
         run: |
-          mkdir -p contrib
-          curl -o contrib/gitlab.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/gitlab.tpl
-          
-      - name: Scan Docker Image with Trivy (Markdown Output)
-        run: |
-          trivy image --format template --template "@contrib/gitlab.tpl" -o trivy-report.md my-app:latest
-          
-      - name: Upload Trivy Markdown Report to GitHub
+          trivy image --format template --template "@@contrib/html.tpl" -o trivy-report.html my-app:latest
+      
+      - name: Upload Trivy HTML Report to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-md-report
-          path: trivy-report.md
-          
+          name: trivy-html-report
+          path: trivy-report.html
+      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
-          
-      - name: Generate unique artifact path
+      
+      - name: Generate simple artifact path
         id: artifact-path
         run: |
-          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-          REPO_NAME=$(echo ${{ github.repository }} | cut -d '/' -f 2)
-          ARTIFACT_PATH="trivy-scans/${REPO_NAME}/${GITHUB_REF_NAME}/${TIMESTAMP}-${GITHUB_SHA:0:7}"
+          TIMESTAMP=$(date +%Y%m%d)
+          ARTIFACT_PATH="trivy-scans/${TIMESTAMP}-${GITHUB_SHA:0:7}"
           echo "ARTIFACT_PATH=${ARTIFACT_PATH}" >> $GITHUB_ENV
           echo "Generated path: ${ARTIFACT_PATH}"
-          
+      
       - name: Upload Trivy Report to S3
         run: |
-          # Upload Markdown report
-          aws s3 cp trivy-report.md s3://${{ secrets.S3_BUCKET_NAME }}/${{ env.ARTIFACT_PATH }}/trivy-report.md
-          echo "Trivy report uploaded to S3: s3://${{ secrets.S3_BUCKET_NAME }}/${{ env.ARTIFACT_PATH }}/trivy-report.md"
-          echo "S3_REPORT_URL=https://${{ secrets.S3_BUCKET_NAME }}.s3.amazonaws.com/${{ env.ARTIFACT_PATH }}/trivy-report.md" >> $GITHUB_ENV
-          
+          # Upload HTML report
+          aws s3 cp trivy-report.html s3://${{ secrets.S3_BUCKET_NAME }}/${{ env.ARTIFACT_PATH }}/trivy-report.html
+          echo "Trivy report uploaded to S3: s3://${{ secrets.S3_BUCKET_NAME }}/${{ env.ARTIFACT_PATH }}/trivy-report.html"
+          echo "S3_REPORT_URL=https://${{ secrets.S3_BUCKET_NAME }}.s3.amazonaws.com/${{ env.ARTIFACT_PATH }}/trivy-report.html" >> $GITHUB_ENV
+      
       - name: Send Trivy Report via Email
         uses: dawidd6/action-send-mail@v3
         with:
@@ -66,7 +60,7 @@ jobs:
           server_port: 587
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Trivy Scan Report (Markdown)"
+          subject: "Trivy Scan Report (HTML)"
           body: |
             Find the attached Trivy scan report.
             
@@ -78,4 +72,4 @@ jobs:
             Commit: ${{ github.sha }}
           to: security-team@example.com
           from: github-actions@example.com
-          attachments: trivy-report.md
+          attachments: trivy-report.html
